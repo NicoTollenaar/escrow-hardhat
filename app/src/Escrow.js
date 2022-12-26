@@ -25,7 +25,6 @@ export default function Escrow({
           id={address}
           onClick={(e) => {
             e.preventDefault();
-
             handleApprove();
           }}
         >

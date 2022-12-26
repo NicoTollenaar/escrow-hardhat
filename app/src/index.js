@@ -6,7 +6,7 @@ import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-if (!window.ethereum) {
+if (false) {
   root.render(
     <React.StrictMode>
       You need to install a browser wallet to build the escrow dapp

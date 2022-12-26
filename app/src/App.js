@@ -1,11 +1,14 @@
-import { ethers } from 'ethers';
-import { useEffect, useState } from 'react';
-import deploy from './deploy';
-import Escrow from './Escrow';
+import { ethers } from "ethers";
+import { useEffect, useState } from "react";
+import deploy from "./deploy";
+import Escrow from "./Escrow";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
+// const provider = new ethers.providers.Web3Provider(window.ethereum);
+const provider = new ethers.providers.JsonRpcProvider();
+console.log("provider:", provider);
 
 export async function approve(escrowContract, signer) {
+  console.log("in approve, logging signer:", signer);
   const approveTxn = await escrowContract.connect(signer).approve();
   await approveTxn.wait();
 }
@@ -16,22 +19,42 @@ function App() {
   const [signer, setSigner] = useState();
 
   useEffect(() => {
-    async function getAccounts() {
-      const accounts = await provider.send('eth_requestAccounts', []);
-
+    async function handleAccountsChanged(accounts) {
+      alert("in handleAccountsChanged, see accounts[0] in console");
+      console.log("in handleAccountsChanged, logging accounts[0]", accounts[0]);
       setAccount(accounts[0]);
-      setSigner(provider.getSigner());
+      setSigner(provider.getSigner(accounts[0]));
     }
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
 
+    return function cleanup() {
+      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+    };
+  }, []);
+
+  async function getAccounts() {
+    const accounts = await window.ethereum.request({
+      method: "eth_requestAccounts",
+    });
+
+    // const accounts = await provider.send("eth_requestAccounts", []);
+    console.log("accounts from eth_requestAccounts:", accounts);
+    setAccount(accounts[0]);
+    setSigner(provider.getSigner());
+  }
+
+  useEffect(() => {
     getAccounts();
-  }, [account]);
+  }, []);
 
   async function newContract() {
-    const beneficiary = document.getElementById('beneficiary').value;
-    const arbiter = document.getElementById('arbiter').value;
-    const value = ethers.BigNumber.from(document.getElementById('wei').value);
+    const beneficiary = document.getElementById("beneficiary").value;
+    const arbiter = document.getElementById("arbiter").value;
+    const value = ethers.BigNumber.from(document.getElementById("wei").value);
+    console.log("signer", signer);
+    console.log("provider:", provider);
+    console.log("account:", account);
     const escrowContract = await deploy(signer, arbiter, beneficiary, value);
-
 
     const escrow = {
       address: escrowContract.address,
@@ -39,19 +62,22 @@ function App() {
       beneficiary,
       value: value.toString(),
       handleApprove: async () => {
-        escrowContract.on('Approved', () => {
+        escrowContract.on("Approved", () => {
           document.getElementById(escrowContract.address).className =
-            'complete';
+            "complete";
           document.getElementById(escrowContract.address).innerText =
             "✓ It's been approved!";
         });
-
-        await approve(escrowContract, signer);
+        console.log("in handleApprove, logging signer:", signer);
+        await approve(escrowContract, provider.getSigner(arbiter));
       },
     };
 
     setEscrows([...escrows, escrow]);
   }
+
+  console.log("in outer space, logging account:", account);
+  console.log("in outer space, logging signer:", signer);
 
   return (
     <>
