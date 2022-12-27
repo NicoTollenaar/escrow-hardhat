@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import deploy from "./deploy";
 import Escrow from "./Escrow";
-
+// window.ethereum provider works only with MetaMask
 // const provider = new ethers.providers.Web3Provider(window.ethereum);
 const provider = new ethers.providers.JsonRpcProvider();
 console.log("provider:", provider);
