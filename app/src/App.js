@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import deploy from "./deploy";
 import Escrow from "./Escrow";
 
-// const provider = new ethers.providers.Web3Provider(window.ethereum);
-const provider = new ethers.providers.JsonRpcProvider();
+const provider = new ethers.providers.Web3Provider(window.ethereum);
+// const provider = new ethers.providers.JsonRpcProvider();
 console.log("provider:", provider);
 
 export async function approve(escrowContract, signer) {
@@ -40,7 +40,7 @@ function App() {
     // const accounts = await provider.send("eth_requestAccounts", []);
     console.log("accounts from eth_requestAccounts:", accounts);
     setAccount(accounts[0]);
-    setSigner(provider.getSigner());
+    setSigner(provider.getSigner(accounts[0]));
   }
 
   useEffect(() => {
