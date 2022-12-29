@@ -20,6 +20,12 @@ contract DvPEscrow {
     bool public isPurchasePriceWithdrawn;
     bool public isSaleObjectWithdrawn;
 
+    event Deployed(
+        address indexed _escrowContractAddress,
+        address indexed _seller,
+        address indexed _buyer
+    );
+
     constructor(
         address _seller,
         address _buyer,
@@ -43,7 +49,14 @@ contract DvPEscrow {
         currencyContractAddress = _currencyContractAddress;
         purchasePrice = _purchasePrice;
         transactionDeadline = _transactionDeadline;
+        emit Deployed(address(this), seller, buyer);
     }
+
+    event TransferredSaleObjectIntoEscrow(
+        address indexed _escrowContractAddress,
+        address indexed _seller,
+        address indexed _saleObjectContractAddress
+    );
 
     function transferSaleObjectIntoEscrow() external {
         require(msg.sender == seller, "only seller can transfer asset");
@@ -63,7 +76,18 @@ contract DvPEscrow {
         require(success, "transferring sale object to escrow failed");
         isSaleObjectTransferred = true;
         if (isPurchasePricePaid) closeTransaction();
+        emit TransferredSaleObjectIntoEscrow(
+            address(this),
+            seller,
+            saleObjectContractAddress
+        );
     }
+
+    event TransferredPurchasePriceIntoEscrow(
+        address indexed _escrowContractAddress,
+        address indexed _buyer,
+        address indexed _currencyContractAddress
+    );
 
     function transferPurchasePriceIntoEscrow() external {
         require(msg.sender == buyer, "only buyer can transfer asset");
@@ -74,7 +98,18 @@ contract DvPEscrow {
         require(!isPurchasePricePaid, "purchase price already paid");
 
         if (isSaleObjectTransferred) closeTransaction();
+        emit TransferredPurchasePriceIntoEscrow(
+            address(this),
+            buyer,
+            currencyContractAddress
+        );
     }
+
+    event TransactionClosed(
+        address indexed _escrowContractAddress,
+        address indexed _seller,
+        address indexed _buyer
+    );
 
     function closeTransaction() private {
         require(
@@ -87,6 +122,7 @@ contract DvPEscrow {
         hasTransactionClosed = true;
         transferAccruedInterestToDeployer();
         transferResidualETHToDeployer();
+        emit TransactionClosed(address(this), seller, buyer);
     }
 
     function transferPurchasePriceToSeller() private returns (bool) {
@@ -113,6 +149,12 @@ contract DvPEscrow {
         return success;
     }
 
+    event PurchasePriceWithdrawn(
+        address indexed _escrowContractAddress,
+        address indexed _buyer,
+        address indexed _currencyContractAddress
+    );
+
     function withdrawPurchasePrice() external {
         require(
             isPurchasePricePaid,
@@ -126,7 +168,10 @@ contract DvPEscrow {
             !hasTransactionClosed,
             "transaction closed successfully, nothing to withdraw"
         );
-        require(msg.sender == buyer, "only buyer can withdraw purchase price");
+        require(
+            msg.sender == buyer || msg.sender == deployer,
+            "only buyer or deployer can withdraw purchase price"
+        );
         (bool success, ) = currencyContractAddress.call(
             abi.encodeWithSignature(
                 "transfer(address,uint256)",
@@ -139,7 +184,18 @@ contract DvPEscrow {
         transferAccruedInterestToDeployer();
         if (!isSaleObjectTransferred || isSaleObjectWithdrawn)
             transferResidualETHToDeployer();
+        emit PurchasePriceWithdrawn(
+            address(this),
+            buyer,
+            currencyContractAddress
+        );
     }
+
+    event SaleObjectWithdrawn(
+        address indexed _escrowContractAddress,
+        address indexed _seller,
+        address indexed _saleObjectContractAddress
+    );
 
     function withdrawSaleObject() external {
         require(
@@ -154,7 +210,10 @@ contract DvPEscrow {
             !hasTransactionClosed,
             "transaction closed successfully, nothing to withdraw"
         );
-        require(msg.sender == seller, "only seller can withdraw sale object");
+        require(
+            msg.sender == seller || msg.sender == deployer,
+            "only seller  or deployer can withdraw sale object"
+        );
         (bool success, ) = saleObjectContractAddress.call(
             abi.encodeWithSignature(
                 "transfer(address,uint256)",
@@ -165,7 +224,18 @@ contract DvPEscrow {
         require(success, "withdrawal of purchase price failed");
         if (!isPurchasePricePaid || isPurchasePriceWithdrawn)
             transferResidualETHToDeployer();
+        emit SaleObjectWithdrawn(
+            address(this),
+            seller,
+            saleObjectContractAddress
+        );
     }
+
+    event AccruedInterestPaidOut(
+        address indexed _escrowContractAddress,
+        address indexed _deployer,
+        address indexed _currencyContractAddress
+    );
 
     function transferAccruedInterestToDeployer() private {
         uint accruedInterest = getBalanceOfCurrency();
@@ -177,7 +247,18 @@ contract DvPEscrow {
             )
         );
         require(success, "transfer of accrued interest to deployer failed");
+        emit AccruedInterestPaidOut(
+            address(this),
+            deployer,
+            currencyContractAddress
+        );
     }
+
+    event ResidualETHReturned(
+        address indexed _escrowContractAddress,
+        address indexed _deployer,
+        uint indexed _residualETHAmount
+    );
 
     function transferResidualETHToDeployer() public {
         bool isEscrowExpiredAndEmpty = checkEscrowExpiredAndEmpty();
@@ -189,6 +270,11 @@ contract DvPEscrow {
             ""
         );
         require(success, "transfer of remaining ether to deployer failed");
+        emit ResidualETHReturned(
+            address(this),
+            deployer,
+            address(this).balance
+        );
     }
 
     function checkEscrowExpiredAndEmpty() private returns (bool) {
