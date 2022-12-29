@@ -56,7 +56,7 @@ describe("DvPEscrow", function () {
         purchasePrice,
         transactionDeadline,
         {
-          value: ethers.utils.parseEther("0.1"),
+          value: contractFunding,
         }
       );
       await escrowContract.deployed();
