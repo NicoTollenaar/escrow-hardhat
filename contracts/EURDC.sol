@@ -104,20 +104,20 @@ contract EURDC is ERC20PublicBalances, ERC20Burnable, DSMath {
             tokenholders.push(to);
         }
         updateInterest(msg.sender, block.timestamp);
-        console.log(
-            "balance sender before add intereste:",
-            balanceOf(msg.sender)
-        );
-        console.log("interest sender before transfer:", interest[msg.sender]);
+        // console.log(
+        //     "balance sender before add intereste:",
+        //     balanceOf(msg.sender)
+        // );
+        // console.log("interest sender before transfer:", interest[msg.sender]);
         addInterestToBalance(msg.sender);
-        console.log(
-            "balance sender after add intereste:",
-            balanceOf(msg.sender)
-        );
+        // console.log(
+        //     "balance sender after add intereste:",
+        //     balanceOf(msg.sender)
+        // );
         updateInterest(to, block.timestamp);
         addInterestToBalance(to);
         super.transfer(to, amount);
-        console.log("balance sender after transfer:", balanceOf(msg.sender));
+        // console.log("balance sender after transfer:", balanceOf(msg.sender));
         return true;
     }
 

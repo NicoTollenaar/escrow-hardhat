@@ -93,10 +93,19 @@ contract DvPEscrow {
         require(msg.sender == buyer, "only buyer can transfer asset");
         require(
             block.timestamp < transactionDeadline,
-            "transaction deadline expire"
+            "transaction deadline has expired"
         );
         require(!isPurchasePricePaid, "purchase price already paid");
-
+        (bool success, ) = currencyContractAddress.call(
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)",
+                msg.sender,
+                address(this),
+                purchasePrice
+            )
+        );
+        require(success, "transferring purchase price to escrow failed");
+        isPurchasePricePaid = true;
         if (isSaleObjectTransferred) closeTransaction();
         emit TransferredPurchasePriceIntoEscrow(
             address(this),
