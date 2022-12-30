@@ -13,7 +13,7 @@ const rateInRayFormatted = ethers.BigNumber.from(
 );
 const BUYERINITIALFUNDS = 1000;
 const purchasePrice = 100;
-const saleObjectTokenId = 1;
+let saleObjectTokenId;
 const saleObjectQuantity = 1;
 const transactionDeadline = Math.floor(Date.now() / 1000) + 600;
 const contractFunding = ethers.utils.parseEther("0.1");
@@ -26,7 +26,6 @@ describe("DvPEscrow", function () {
     buyerSigner,
     buyerAddress;
   let escrowContract, currencyContract, saleObjectContract;
-  let tokenId;
   let tx;
   beforeEach(async () => {
     // console.log("BEFORE-EACH LAYER1");
@@ -50,6 +49,7 @@ describe("DvPEscrow", function () {
 
       tx = await saleObjectContract.mint(sellerAddress);
       await tx.wait();
+      saleObjectTokenId = await saleObjectContract.tokenByIndex(0);
 
       const escrowFactory = await ethers.getContractFactory("DvPEscrow");
       escrowContract = await escrowFactory.deploy(
@@ -72,10 +72,9 @@ describe("DvPEscrow", function () {
         .approve(escrowContract.address, purchasePrice);
       await tx.wait();
 
-      tokenId = await saleObjectContract.tokenByIndex(0);
       tx = await saleObjectContract
         .connect(sellerSigner)
-        .approve(escrowContract.address, tokenId);
+        .approve(escrowContract.address, saleObjectTokenId);
       await tx.wait();
     } catch (error) {
       console.log("in catch block logging error:", error);
@@ -119,14 +118,16 @@ describe("DvPEscrow", function () {
     });
 
     it("should approve transfer of sale object", async function () {
-      const approvedAddress = await saleObjectContract.getApproved(tokenId);
+      const approvedAddress = await saleObjectContract.getApproved(
+        saleObjectTokenId
+      );
       assert(approvedAddress === escrowContract.address);
     });
   });
 
   describe("testing transferPurchasePriceIntoEscrow()", () => {
     beforeEach(async function () {
-      // console.log("BEFORE-EACH - LAYER2");
+      // console.log("BEFORE-EACH - LAYER2 (transfer purchase price");
       tx = await escrowContract
         .connect(buyerSigner)
         .transferPurchasePriceIntoEscrow();
@@ -146,7 +147,7 @@ describe("DvPEscrow", function () {
       ).to.be.revertedWith("purchase price already paid");
     });
 
-    describe("testing withdrawPurchasePrice() after transfer", async function () {
+    describe("withdrawPurchasePrice() after transferring purchase price", async function () {
       let currencyBalanceEscrowContract, snapshot;
       after(async function () {
         await snapshot.restore();
@@ -169,6 +170,43 @@ describe("DvPEscrow", function () {
         );
         assert(currencyBalanceBuyer.toNumber() === BUYERINITIALFUNDS);
         assert(currencyBalanceEscrowContract.toNumber() < purchasePrice);
+      });
+    });
+    describe("transfer sale object after transferring purchase price", async function () {
+      beforeEach(async function () {
+        // console.log("BEFORE-EACH - LAYER3 (transfer sale object");
+        tx = await escrowContract
+          .connect(sellerSigner)
+          .transferSaleObjectIntoEscrow();
+        await tx.wait();
+      });
+      it("should transfer the sale object into escrow", async function () {
+        const balanceSaleObjectSeller = await saleObjectContract.balanceOf(
+          sellerAddress
+        );
+        assert(balanceSaleObjectSeller.toNumber() === 0);
+      });
+      it("should close the transaction", async function () {
+        const currencyBalanceSeller = await currencyContract.balanceOf(
+          sellerAddress
+        );
+        const currencyBalanceEscrow = await currencyContract.balanceOf(
+          escrowContract.address
+        );
+        const AnyNFTbalanceBuyer = await saleObjectContract.balanceOf(
+          buyerAddress
+        );
+        const AnyNFTBalanceEscrow = await saleObjectContract.balanceOf(
+          escrowContract.address
+        );
+        const addressOwnerAnyNFT = await saleObjectContract.ownerOf(
+          saleObjectTokenId
+        );
+        assert(currencyBalanceSeller.toNumber() === 100);
+        assert(currencyBalanceEscrow.toNumber() < 100);
+        assert(AnyNFTBalanceEscrow.toNumber() === 0);
+        assert(AnyNFTbalanceBuyer.toNumber() === 1);
+        assert(addressOwnerAnyNFT === buyerAddress);
       });
     });
   });

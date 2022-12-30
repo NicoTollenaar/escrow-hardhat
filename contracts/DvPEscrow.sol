@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "hardhat/console.sol";
+
 contract DvPEscrow {
     address public seller;
     address public buyer;
@@ -127,7 +129,8 @@ contract DvPEscrow {
         );
         bool cashLegSettled = transferPurchasePriceToSeller();
         bool assetLegSettled = transferSaleObjectToBuyer();
-        require(cashLegSettled && assetLegSettled);
+        require(cashLegSettled, "transfer of purchase price to seller failed");
+        require(assetLegSettled, "transfer of sale object to buyer failed");
         hasTransactionClosed = true;
         transferAccruedInterestToDeployer();
         transferResidualETHToDeployer();
@@ -147,9 +150,10 @@ contract DvPEscrow {
     }
 
     function transferSaleObjectToBuyer() private returns (bool) {
-        (bool success, ) = currencyContractAddress.call(
+        (bool success, ) = saleObjectContractAddress.call(
             abi.encodeWithSignature(
-                "transfer(address,uint256)",
+                "transferFrom(address,address,uint256)",
+                address(this),
                 buyer,
                 saleObjectTokenId
             )
