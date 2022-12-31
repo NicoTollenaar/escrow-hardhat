@@ -64,7 +64,7 @@ contract DvPEscrow {
         require(msg.sender == seller, "only seller can transfer asset");
         require(
             block.timestamp < transactionDeadline,
-            "transaction deadline expire"
+            "transaction deadline expired"
         );
         require(!isSaleObjectTransferred, "sale object already transferred");
         (bool success, ) = saleObjectContractAddress.call(
@@ -229,12 +229,13 @@ contract DvPEscrow {
         );
         (bool success, ) = saleObjectContractAddress.call(
             abi.encodeWithSignature(
-                "transfer(address,uint256)",
+                "transferFrom(address,address,uint256)",
+                address(this),
                 seller,
                 saleObjectTokenId
             )
         );
-        require(success, "withdrawal of purchase price failed");
+        require(success, "withdrawal of sale object failed");
         if (!isPurchasePricePaid || isPurchasePriceWithdrawn)
             transferResidualETHToDeployer();
         emit SaleObjectWithdrawn(
