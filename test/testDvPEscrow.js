@@ -17,9 +17,10 @@ let saleObjectTokenId;
 const saleObjectQuantity = 1;
 const transactionPeriod = 6000;
 const transactionDeadline = Math.floor(Date.now() / 1000) + transactionPeriod;
-const contractFunding = ethers.utils.parseEther("1");
+const contractFunding = ethers.utils.parseEther("0.01");
 
 describe("DvPEscrow", function () {
+  this.timeout(0);
   let deployerSigner,
     deployerAddress,
     sellerSigner,
@@ -33,7 +34,18 @@ describe("DvPEscrow", function () {
   beforeEach(async () => {
     // console.log("BEFORE-EACH LAYER1 (set up)");
     try {
+      // const ganacheSignerFour = ethers.provider.getSigner(3);
+      // const ganacheSignerFourAddress = await ganacheSignerFour.getAddress();
+      // tx = await ganacheSignerFour.sendTransaction({
+      //   from: ganacheSignerFourAddress,
+      //   to: deployerAddress,
+      //   value: ethers.utils.parseEther("5"),
+      // });
+      // await tx.wait();
+      // const block = await ethers.provider.getBlock();
+      // console.log("block.gasLimit", block.gasLimit);
       const network = await ethers.provider.getNetwork();
+      // console.log("network:", network);
       chainId = network.chainId;
       deployerSigner = ethers.provider.getSigner(0);
       deployerAddress = await deployerSigner.getAddress();
@@ -41,6 +53,24 @@ describe("DvPEscrow", function () {
       sellerAddress = await sellerSigner.getAddress();
       buyerSigner = ethers.provider.getSigner(2);
       buyerAddress = await buyerSigner.getAddress();
+      console.log("deployerAddress:", deployerAddress);
+      console.log("sellerAddress:", sellerAddress);
+      console.log("buyerAddress:", buyerAddress);
+      const ETHBalanceDeployer = await deployerSigner.getBalance();
+      const ETHBalanceSeller = await sellerSigner.getBalance();
+      const ETHBalanceBuyer = await buyerSigner.getBalance();
+      console.log(
+        "ETHBalanceDeployer:",
+        ethers.utils.formatEther(ETHBalanceDeployer)
+      );
+      console.log(
+        "ETHBalanceSeller:",
+        ethers.utils.formatEther(ETHBalanceSeller)
+      );
+      console.log(
+        "ETHBalanceBuyer:",
+        ethers.utils.formatEther(ETHBalanceBuyer)
+      );
       const currencyFactory = await ethers.getContractFactory("EURDC");
       currencyContract = await currencyFactory.deploy(rateInRayFormatted);
       await currencyContract.deployed();
@@ -138,7 +168,7 @@ describe("DvPEscrow", function () {
       // console.log("BEFORE-EACH - LAYER2 (transfer purchase price)");
       tx = await escrowContract
         .connect(buyerSigner)
-        .transferPurchasePriceIntoEscrow();
+        .transferPurchasePriceIntoEscrow({ gasLimit: 6721975 });
       await tx.wait();
     });
 
@@ -151,7 +181,9 @@ describe("DvPEscrow", function () {
 
     it("should revert if transferring purchase price is attempted again", async function () {
       await expect(
-        escrowContract.connect(buyerSigner).transferPurchasePriceIntoEscrow()
+        escrowContract
+          .connect(buyerSigner)
+          .transferPurchasePriceIntoEscrow({ gasLimit: 6721975 })
       ).to.be.revertedWith("purchase price already paid");
     });
 
@@ -162,10 +194,14 @@ describe("DvPEscrow", function () {
       });
       it("should revert if withdrawal is attempted before expiry", async function () {
         await expect(
-          escrowContract.connect(buyerSigner).withdrawPurchasePrice()
+          escrowContract
+            .connect(buyerSigner)
+            .withdrawPurchasePrice({ gasLimit: 6721975 })
         ).to.be.revertedWith("transaction deadline not yet expired");
         await expect(
-          escrowContract.connect(deployerSigner).withdrawPurchasePrice()
+          escrowContract
+            .connect(deployerSigner)
+            .withdrawPurchasePrice({ gasLimit: 6721975 })
         ).to.be.revertedWith("transaction deadline not yet expired");
       });
 
@@ -197,7 +233,7 @@ describe("DvPEscrow", function () {
         );
         tx = await escrowContract
           .connect(sellerSigner)
-          .transferSaleObjectIntoEscrow({ gasLimit: 30000000 });
+          .transferSaleObjectIntoEscrow({ gasLimit: 6721975 });
         await tx.wait();
       });
       it("should transfer the sale object into escrow", async function () {
@@ -230,9 +266,6 @@ describe("DvPEscrow", function () {
         const currencyBalanceEscrow = await currencyContract.balanceOf(
           escrowContract.address
         );
-        // const currencyBalanceDeployer = await currencyContract.balanceOf(
-        //   deployerAddress
-        // );
         const ETHBalanceEscrow = await ethers.provider.getBalance(
           escrowContract.address
         );
@@ -266,7 +299,9 @@ describe("DvPEscrow", function () {
 
     it("should revert if transferring sale object is attempted again", async function () {
       await expect(
-        escrowContract.connect(sellerSigner).transferSaleObjectIntoEscrow()
+        escrowContract
+          .connect(sellerSigner)
+          .transferSaleObjectIntoEscrow({ gasLimit: 6721975 })
       ).to.be.revertedWith("sale object already transferred");
     });
 
@@ -277,7 +312,9 @@ describe("DvPEscrow", function () {
       });
       it("should revert if withdrawal is attempted before expiry", async function () {
         await expect(
-          escrowContract.connect(sellerSigner).withdrawSaleObject()
+          escrowContract
+            .connect(sellerSigner)
+            .withdrawSaleObject({ gasLimit: 6721975 })
         ).to.be.revertedWith("transaction deadline not yet expired");
         await expect(
           escrowContract.connect(deployerSigner).withdrawSaleObject()
@@ -310,20 +347,16 @@ describe("DvPEscrow", function () {
         );
         tx = await escrowContract
           .connect(buyerSigner)
-          .transferPurchasePriceIntoEscrow({ gasLimit: 30000000 });
+          .transferPurchasePriceIntoEscrow({ gasLimit: 6721975 });
         await tx.wait();
       });
       it("should transfer the purchase price into escrow", async function () {
         const balanceCurrencyBuyer = await currencyContract.balanceOf(
           buyerAddress
         );
-        // const balanceCurrencyEscrow = await currencyContract.balanceOf(
-        //   escrowContract.address
-        // );
         assert(
           balanceCurrencyBuyer.toNumber() === BUYERINITIALFUNDS - purchasePrice
         );
-        // assert(balanceCurrencyEscrow.toNumber() === purchasePrice);
       });
       it("should close the transaction", async function () {
         const currencyBalanceSeller = await currencyContract.balanceOf(
@@ -349,9 +382,6 @@ describe("DvPEscrow", function () {
         const currencyBalanceEscrow = await currencyContract.balanceOf(
           escrowContract.address
         );
-        // const currencyBalanceDeployer = await currencyContract.balanceOf(
-        //   deployerAddress
-        // );
         const ETHBalanceEscrow = await ethers.provider.getBalance(
           escrowContract.address
         );

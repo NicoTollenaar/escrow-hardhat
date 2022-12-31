@@ -39,7 +39,7 @@ contract DvPEscrow {
         uint _transactionDeadline
     ) payable {
         require(
-            msg.value >= 0.1 ether,
+            msg.value >= 0.001 ether,
             "insufficient ETH sent to fund the escrow contract"
         );
         deployer = msg.sender;
