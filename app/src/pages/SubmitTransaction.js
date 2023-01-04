@@ -14,6 +14,16 @@ function SubmitTransaction() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const escrowContract = await Utils.deployEscrowContract(
+      sellerAddress,
+      buyerAddress,
+      saleObjectAddress,
+      saleObjectTokenId,
+      saleObjectQuantity,
+      currencyContractAddress,
+      purchasePrice,
+      transactionDeadline
+    );
   }
 
   return (

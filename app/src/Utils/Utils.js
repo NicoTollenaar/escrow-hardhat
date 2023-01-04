@@ -12,7 +12,16 @@ class Utils {
     return deployerSigner;
   }
 
-  static async deployEscrowContract() {
+  static async deployEscrowContract(
+    sellerAddress,
+    buyerAddress,
+    saleObjectContractAddress,
+    saleObjectTokenId,
+    saleObjectQuantity,
+    currencyContractAddress,
+    purchasePrice,
+    transactionDeadline
+  ) {
     const deployerSigner = await this.getDeployerSigner();
     const factory = new ethers.ContractFactory(
       artifacts.abi,
