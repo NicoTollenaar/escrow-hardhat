@@ -1,20 +1,28 @@
 import { ethers } from "ethers";
 import { useState } from "react";
 import { Utils } from "../Utils/Utils";
+import contractAddresses from "../../../constants/contractAddresses";
 
 function SubmitTransaction() {
+  const [escrowContract, setEscrowContract] = useState("");
   const [sellerAddress, setSellerAddress] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
-  const [saleObjectAddress, setSaleObjectAddress] = useState("");
-  const [saleObjectQuantity, setSaleObjectQuantity] = useState(0);
+  const [saleObjectAddress, setSaleObjectAddress] = useState(
+    contractAddresses.saleObjectContractAddress
+  );
+  const [saleObjectQuantity, setSaleObjectQuantity] = useState(1);
+  const [saleObjectTokenId, setSaleObjectTokenId] = useState(0);
   const [purchasePrice, setPurchasePrice] = useState(0);
-  const [currencyContractAddress, setCurrencyContractAddress] = useState("");
-  const [transactionDeadlineDate, setTransactionDeadlineDate] = "";
-  const [transactionDeadlineTime, setTransactionDeadlineTime] = "";
+  const [currencyContractAddress, setCurrencyContractAddress] = useState(
+    contractAddresses.currencyContractAddress
+  );
+  const [deadlineDate, setDeadlineDate] = useState("");
+  const [deadlineTime, setDeadlineTime] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const escrowContract = await Utils.deployEscrowContract(
+    const deadline = Math.floor(Date.now() / 1000) + 30;
+    const contract = await Utils.deployEscrowContract(
       sellerAddress,
       buyerAddress,
       saleObjectAddress,
@@ -22,9 +30,11 @@ function SubmitTransaction() {
       saleObjectQuantity,
       currencyContractAddress,
       purchasePrice,
-      transactionDeadline
+      deadline
     );
+    setEscrowContract(contract);
   }
+  console.log("escrowContract:", escrowContract);
 
   return (
     <>
@@ -84,13 +94,13 @@ function SubmitTransaction() {
                 className="block text-gray-700 text-sm font-bold mb-2"
                 for="NFT"
               >
-                Quantity (NFT)
+                TokenId (NFT)
               </label>
               <input
                 className="shadow appearance-none border rounded w-96 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 type="number"
-                placeholder="Quantity"
-                value={(e) => setSaleObjectQuantity(e.target.value)}
+                placeholder="TokenId"
+                value={(e) => setSaleObjectTokenId(e.target.value)}
               />
             </div>
           </div>
@@ -136,7 +146,7 @@ function SubmitTransaction() {
                 className="shadow appearance-none border rounded w-96 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 type="date"
                 placeholder="Date"
-                value={(e) => setTransactionDeadlineDate(e.target.value)}
+                value={(e) => setDeadlineDate(e.target.value)}
               />
             </div>
             <div className="m-3 w-96">
@@ -144,7 +154,7 @@ function SubmitTransaction() {
                 className="mt-[28px]  shadow appearance-none border rounded w-96 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 type="time"
                 placeholder="Time"
-                value={(e) => setTransactionDeadlineTime(e.target.value)}
+                value={(e) => setDeadlineTime(e.target.value)}
               />
             </div>
           </div>
@@ -157,9 +167,6 @@ function SubmitTransaction() {
             </button>
           </div>
         </form>
-        {/* <p className="text-center text-gray-500 text-xs">
-          &copy;2020 Acme Corp. All rights reserved.
-        </p> */}
       </div>
     </>
   );

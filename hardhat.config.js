@@ -3,6 +3,7 @@ require("dotenv").config();
 
 module.exports = {
   solidity: "0.8.17",
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {
       gasMultiplier: 1.5,
