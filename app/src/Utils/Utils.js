@@ -8,7 +8,13 @@ class Utils {
     const [deployerAddress] = await window.ethereum.request(
       "eth_requestAccounts"
     );
+    console.log(
+      "in getDeployerSigner logging deployerAddress:",
+      deployerAddress
+    );
     const deployerSigner = this.provider.getSigner(deployerAddress);
+    console.log("in getDeployerSigner logging this.provider:", this.provider);
+    console.log("in getDeployerSigner logging deployerSigner:", deployerSigner);
     return deployerSigner;
   }
 
@@ -22,6 +28,20 @@ class Utils {
     purchasePrice,
     transactionDeadline
   ) {
+    console.log("logging argumebnts sellerAddress:", sellerAddress);
+    console.log("logging argumebnts buyerAddress:", buyerAddress);
+    console.log(
+      "logging argumebnts saleObjectContractAddress:",
+      saleObjectContractAddress
+    );
+    console.log("logging argumebnts saleObjectTokenId:", saleObjectTokenId);
+    console.log("logging argumebnts saleObjectQuantity:", saleObjectQuantity);
+    console.log(
+      "logging argumebnts currencyContractAddress:",
+      currencyContractAddress
+    );
+    console.log("logging argumebnts purchasePrice:", purchasePrice);
+    console.log("logging argumebnts transactionDeadline:", transactionDeadline);
     const deployerSigner = await this.getDeployerSigner();
     const factory = new ethers.ContractFactory(
       artifacts.abi,
